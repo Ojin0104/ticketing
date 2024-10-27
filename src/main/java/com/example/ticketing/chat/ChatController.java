@@ -1,6 +1,7 @@
 package com.example.ticketing.chat;
 
 import com.example.ticketing.chat.dto.ChatConnectionDto;
+import com.example.ticketing.chat.dto.ChatMessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,5 +22,11 @@ public class ChatController {
     ResponseEntity<?> getChattingConnection(@RequestBody ChatConnectionDto chatConnectionDto){
         String userUUID = chatService.getChatConnection(chatConnectionDto);
         return ResponseEntity.ok(userUUID);
+    }
+
+    @PostMapping("/sendMessage")
+    ResponseEntity<?> sendMessage(@RequestBody ChatMessageDto chatMessageDto){
+        chatService.sendMessage(chatMessageDto);
+        return ResponseEntity.ok(true);
     }
 }
