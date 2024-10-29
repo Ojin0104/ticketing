@@ -33,12 +33,16 @@ public class ChatService {
         return userUUID;
     }
 
-    public void sendMessage(ChatMessageDto chatMessageDto) {
+    public void sendMessage(String userUUID, ChatMessageDto chatMessageDto) {
 
         List<String> users =  emitterRepository.getAll();
 
         //Emitter에 등록된 유저에게 Message Body 전송
         users.forEach(receiver -> {
+            if(receiver.equals(userUUID)){
+                return;
+            }
+
             SseEmitter emitter = emitterRepository.get(receiver);
             try{
                 emitter.send(SseEmitter.event()
