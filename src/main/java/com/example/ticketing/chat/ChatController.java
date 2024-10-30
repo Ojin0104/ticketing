@@ -2,17 +2,17 @@ package com.example.ticketing.chat;
 
 import com.example.ticketing.chat.dto.ChatConnectionDto;
 import com.example.ticketing.chat.dto.ChatMessageDto;
+import com.example.ticketing.common.UUIDGenerator;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Arrays;
 
@@ -23,24 +23,39 @@ import java.util.Arrays;
 public class ChatController {
 
     private final ChatService chatService;
+    private final UUIDGenerator uuidGenerator;
 
-    @PostMapping("/connection")
-    ResponseEntity<?> getChattingConnection(@RequestBody ChatConnectionDto chatConnectionDto, HttpServletResponse response){
-        String userUUID = chatService.getChatConnection(chatConnectionDto);
+    @GetMapping(value = "/connection", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    ResponseEntity<SseEmitter> getChattingConnection(HttpServletRequest request, HttpServletResponse response){
 
-        // 쿠키 생성 및 설정
-        ResponseCookie cookie = ResponseCookie.from("userId", userUUID)
-                .httpOnly(true)                // HttpOnly 설정
-                //.secure(true)                  // HTTPS를 사용하는 경우 secure 설정
-                .path("/")                     // 쿠키의 유효 경로 설정
-                .maxAge(60 * 60 * 24 )    // 1일 동안 유효
-                .sameSite("Strict")            // CSRF 방지를 위한 SameSite 설정
-                .build();
+        String userUUID = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("userId".equals(cookie.getName())) {
+                    userUUID = cookie.getValue();
+                    break;
+                }
+            }
+        }
 
-        // 응답 헤더에 쿠키 추가
-        response.addHeader("Set-Cookie", cookie.toString());
+        if(userUUID == null) {
+            userUUID = uuidGenerator.makeUUID();
+            // 쿠키 생성 및 설정
+            ResponseCookie cookie = ResponseCookie.from("userId", userUUID)
+                    .httpOnly(true)
+                    .path("/")
+                    .maxAge(60 * 60 * 24)
+                    .sameSite("Strict")
+                    .build();
 
-        return ResponseEntity.ok(userUUID);
+            // 응답 헤더에 쿠키 추가
+            response.addHeader("Set-Cookie", cookie.toString());
+
+        }
+
+        SseEmitter emitter = chatService.getChatConnection(userUUID);
+
+        return ResponseEntity.ok(emitter);
     }
 
     @PostMapping("/sendMessage")

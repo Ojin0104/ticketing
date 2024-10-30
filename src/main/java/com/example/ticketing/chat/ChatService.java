@@ -18,25 +18,26 @@ import java.util.List;
 public class ChatService {
 
     private final EmitterRepository emitterRepository;
-    private final UUIDGenerator uuidGenerator;
+
 
     private static final Long DEFAULT_TIMEOUT = 600L * 1000 * 60;
 
-    public String getChatConnection(ChatConnectionDto chatConnectionDto){
+    public SseEmitter getChatConnection(String userUUID){
         SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
-        String userUUID = uuidGenerator.makeUUID();
         emitterRepository.save(userUUID,emitter);
 
         emitter.onCompletion(() -> emitterRepository.deleteById(userUUID));
         emitter.onTimeout(() -> emitterRepository.deleteById(userUUID));
 
-        return userUUID;
+        log.info(userUUID +" SSE Connection Open");
+
+        return emitter;
     }
 
     public void sendMessage(String userUUID, ChatMessageDto chatMessageDto) {
 
         List<String> users =  emitterRepository.getAll();
-
+        log.info("users size : "+users.size());
         //Emitter에 등록된 유저에게 Message Body 전송
         users.forEach(receiver -> {
             if(receiver.equals(userUUID)){
@@ -54,6 +55,7 @@ public class ChatService {
             }
         });
 
+        log.info(userUUID +" send Message");
 
         //redis에 대화내용 저장
     }
