@@ -381,12 +381,11 @@
 
     })
 
-
-    document.getElementById("chatting-send-button").addEventListener("click", () => {
+    function sendMessage() {
         const messageInput = document.getElementById("chatting-input");
         const message = messageInput.value;
         messageInput.value = '';
-        const name = getNickname(); // Replace with the actual user's name
+        const name = getNickname();
         const userUUID = getCookie('userId');
         console.log("EventSource readyState:", eventSource.readyState);
         // 메시지를 채팅 박스에 왼쪽 정렬로 추가
@@ -402,7 +401,20 @@
             },
             body: JSON.stringify({name, userUUID, message})
         });
+    }
 
+    document.getElementById("chatting-send-button").addEventListener("click", () => {
+        sendMessage();
     });
+
+    // 엔터 키 이벤트 추가
+    document.getElementById("chatting-input").addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    });
+
+
+
 </script>
 </html>
