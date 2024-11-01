@@ -176,6 +176,32 @@
             border-radius: 5px;
             font-weight: bold;
         }
+
+        /* 기본 스타일 */
+        #chatting-box-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 내가 보낸 메시지 (왼쪽 정렬) */
+        .sent-message {
+            align-self: flex-start;
+            background-color: #daf5ff;
+            padding: 8px;
+            border-radius: 10px;
+            margin: 5px;
+            max-width: 60%;
+        }
+
+        /* 받은 메시지 (오른쪽 정렬) */
+        .received-message {
+            align-self: flex-end;
+            background-color: #ffe5e5;
+            padding: 8px;
+            border-radius: 10px;
+            margin: 5px;
+            max-width: 60%;
+        }
     </style>
 </head>
 <body>
@@ -272,6 +298,18 @@
 
     // 페이지 로드시 마다 실행 (새로고침 포함)
     window.onload = () => {
+
+        fetch('/api/chat/userId', {
+            method: 'GET',
+            credentials: 'include',
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("userUUID:", data);
+                // userUUID 값을 필요에 따라 사용할 수 있습니다.
+            })
+            .catch(error => console.error("Error connecting to chat:", error));
+
         if (document.cookie.indexOf("name=") !== -1) {
             name_input_section.style.display = "none";
             name_value.style.display = "block";
@@ -322,5 +360,49 @@
     }
 
     startCountdown();
+
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    const eventSource = new EventSource('/api/chat/connection');
+
+    eventSource.addEventListener('chat',(event) =>{
+        console.log("메세지 수신");
+        const chatBox = document.getElementById("chatting-box-section");
+        const newMessage = document.createElement("div");
+        const data = JSON.parse(event.data);
+        newMessage.textContent = `${data.name}: ${data.message}`;
+        newMessage.classList.add("received-message");
+        chatBox.appendChild(newMessage);
+
+    })
+
+
+    document.getElementById("chatting-send-button").addEventListener("click", () => {
+        const messageInput = document.getElementById("chatting-input");
+        const message = messageInput.value;
+        messageInput.value = '';
+        const name = getNickname(); // Replace with the actual user's name
+        const userUUID = getCookie('userId');
+        console.log("EventSource readyState:", eventSource.readyState);
+        // 메시지를 채팅 박스에 왼쪽 정렬로 추가
+        const chatBox = document.getElementById("chatting-box-section");
+        const newMessage = document.createElement("div");
+        newMessage.textContent = `${message}`;
+        newMessage.classList.add("sent-message");
+        chatBox.appendChild(newMessage);
+        fetch('/api/chat/sendMessage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({name, userUUID, message})
+        });
+
+    });
 </script>
 </html>

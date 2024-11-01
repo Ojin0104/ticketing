@@ -3,6 +3,7 @@ package com.example.ticketing.chat;
 import com.example.ticketing.chat.dto.ChatConnectionDto;
 import com.example.ticketing.chat.dto.ChatMessageDto;
 import com.example.ticketing.common.UUIDGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,8 +26,9 @@ public class ChatController {
     private final ChatService chatService;
     private final UUIDGenerator uuidGenerator;
 
-    @GetMapping(value = "/connection", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    ResponseEntity<SseEmitter> getChattingConnection(HttpServletRequest request, HttpServletResponse response){
+
+    @GetMapping(value = "/userId")
+    ResponseEntity<?> getUserId(HttpServletRequest request, HttpServletResponse response){
 
         String userUUID = null;
         if (request.getCookies() != null) {
@@ -52,6 +54,22 @@ public class ChatController {
             response.addHeader("Set-Cookie", cookie.toString());
 
         }
+        return ResponseEntity.ok(userUUID);
+    }
+
+
+    @GetMapping(value = "/connection", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    ResponseEntity<SseEmitter> getChattingConnection(HttpServletRequest request, HttpServletResponse response){
+
+        String userUUID = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("userId".equals(cookie.getName())) {
+                    userUUID = cookie.getValue();
+                    break;
+                }
+            }
+        }
 
         SseEmitter emitter = chatService.getChatConnection(userUUID);
 
@@ -59,7 +77,7 @@ public class ChatController {
     }
 
     @PostMapping("/sendMessage")
-    ResponseEntity<?> sendMessage(@RequestBody ChatMessageDto chatMessageDto, HttpServletRequest request){
+    ResponseEntity<?> sendMessage(@RequestBody ChatMessageDto chatMessageDto, HttpServletRequest request) throws JsonProcessingException {
 
         String userUUID = Arrays.stream(request.getCookies())
                 .filter(cookie -> "userId".equals(cookie.getName()))
