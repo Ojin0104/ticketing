@@ -26,9 +26,8 @@ public class ChatController {
     private final ChatService chatService;
     private final UUIDGenerator uuidGenerator;
 
-
-    @GetMapping(value = "/userId")
-    ResponseEntity<?> getUserId(HttpServletRequest request, HttpServletResponse response){
+    @GetMapping(value = "/setting")
+    ResponseEntity<?> chatInitialSetting(HttpServletRequest request, HttpServletResponse response){
 
         String userUUID = null;
         if (request.getCookies() != null) {
@@ -44,7 +43,7 @@ public class ChatController {
             userUUID = uuidGenerator.makeUUID();
             // 쿠키 생성 및 설정
             ResponseCookie cookie = ResponseCookie.from("userId", userUUID)
-                    .httpOnly(true)
+                   // .httpOnly(true)
                     .path("/")
                     .maxAge(60 * 60 * 24)
                     .sameSite("Strict")
@@ -54,7 +53,8 @@ public class ChatController {
             response.addHeader("Set-Cookie", cookie.toString());
 
         }
-        return ResponseEntity.ok(userUUID);
+
+        return ResponseEntity.ok(chatService.getAllChatMessages());
     }
 
 
@@ -84,7 +84,6 @@ public class ChatController {
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse("No user ID found in cookie.");
-
         chatService.sendMessage(userUUID,chatMessageDto);
         return ResponseEntity.ok(true);
     }

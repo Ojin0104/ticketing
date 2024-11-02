@@ -299,16 +299,36 @@
     // 페이지 로드시 마다 실행 (새로고침 포함)
     window.onload = () => {
 
-        fetch('/api/chat/userId', {
+        fetch('/api/chat/setting', {
             method: 'GET',
             credentials: 'include',
             })
             .then(response => response.json())
-            .then(data => {
-                console.log("userUUID:", data);
-                // userUUID 값을 필요에 따라 사용할 수 있습니다.
+            .then(messages => {
+                // 쿠키에서 현재 사용자 ID 가져오기
+                const currentUserUUID = getCookie('userId');
+
+                // 이전에 가져온 메시지 목록을 반복하면서 각각을 표시
+                messages.forEach(message => {
+                    displayMessage(message, currentUserUUID);
+                });
             })
-            .catch(error => console.error("Error connecting to chat:", error));
+            .then(() =>{
+                eventSource = new EventSource('/api/chat/connection');
+
+                eventSource.addEventListener('chat',(event) =>{
+                    console.log("메세지 수신");
+                    const chatBox = document.getElementById("chatting-box-section");
+                    const newMessage = document.createElement("div");
+                    const data = JSON.parse(event.data);
+                    newMessage.textContent = `${data.name}: ${data.message}`;
+                    newMessage.classList.add("received-message");
+                    chatBox.appendChild(newMessage);
+
+                })
+
+            })
+            .catch(error => console.error("Error fetching previous messages:", error));
 
         if (document.cookie.indexOf("name=") !== -1) {
             name_input_section.style.display = "none";
@@ -368,18 +388,32 @@
         if (parts.length === 2) return parts.pop().split(';').shift();
     }
 
-    const eventSource = new EventSource('/api/chat/connection');
 
-    eventSource.addEventListener('chat',(event) =>{
-        console.log("메세지 수신");
+
+
+    // 현재 사용자의 메시지와 다른 사용자의 메시지를 구분해 채팅창에 표시하는 함수
+    function displayMessage(message, currentUserUUID) {
         const chatBox = document.getElementById("chatting-box-section");
         const newMessage = document.createElement("div");
-        const data = JSON.parse(event.data);
-        newMessage.textContent = `${data.name}: ${data.message}`;
-        newMessage.classList.add("received-message");
-        chatBox.appendChild(newMessage);
 
-    })
+        // userUUID를 기준으로 메시지 위치 구분
+        if (message.userUUID === currentUserUUID) {
+            // 현재 사용자의 메시지인 경우 (왼쪽 정렬)
+            newMessage.classList.add("sent-message");
+            newMessage.textContent = `${message.message}`;
+        } else {
+            // 다른 사용자의 메시지인 경우 (오른쪽 정렬)
+            newMessage.classList.add("received-message");
+            newMessage.textContent = `${message.name}: ${message.message}`;
+        }
+
+        // 채팅창에 메시지 추가
+        chatBox.appendChild(newMessage);
+    }
+
+    let eventSource;
+
+
 
     function sendMessage() {
         const messageInput = document.getElementById("chatting-input");
@@ -387,6 +421,7 @@
         messageInput.value = '';
         const name = getNickname();
         const userUUID = getCookie('userId');
+        console.log(userUUID);
         console.log("EventSource readyState:", eventSource.readyState);
         // 메시지를 채팅 박스에 왼쪽 정렬로 추가
         const chatBox = document.getElementById("chatting-box-section");

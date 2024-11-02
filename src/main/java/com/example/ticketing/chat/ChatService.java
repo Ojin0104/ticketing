@@ -7,12 +7,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.yaml.snakeyaml.emitter.Emitter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -20,8 +22,8 @@ import java.util.List;
 public class ChatService {
 
     private final EmitterRepository emitterRepository;
-
-
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final String chatKey = "all-chat";
     private static final Long DEFAULT_TIMEOUT = 600L * 1000 * 60;
 
     public SseEmitter getChatConnection(String userUUID){
@@ -62,5 +64,14 @@ public class ChatService {
         log.info(userUUID +" send Message");
 
         //redis에 대화내용 저장
+
+        // 채팅 메시지를 Redis 리스트에 추가
+        redisTemplate.opsForList().rightPush(chatKey, chatMessageDto);
+
+        redisTemplate.expire(chatKey, 7, TimeUnit.DAYS);
+    }
+
+    public List<Object> getAllChatMessages(){
+        return redisTemplate.opsForList().range(chatKey, 0, -1);
     }
 }
