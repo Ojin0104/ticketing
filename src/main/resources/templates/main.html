@@ -181,6 +181,9 @@
         #chatting-box-section {
             display: flex;
             flex-direction: column;
+            max-height: 300px; /* 최대 높이를 설정 */
+            overflow-y: auto;  /* 수직 스크롤 활성화 */
+            
         }
 
         /* 내가 보낸 메시지 (왼쪽 정렬) */
@@ -443,7 +446,7 @@
     });
 
     // 엔터 키 이벤트 추가
-    document.getElementById("chatting-input").addEventListener("keydown", function(event) {
+    document.getElementById("chatting-input").addEventListener("keyup", function(event) {
         if (event.key === "Enter") {
             sendMessage();
         }

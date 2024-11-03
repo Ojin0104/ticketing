@@ -1,8 +1,6 @@
 package com.example.ticketing.chat;
 
-import com.example.ticketing.chat.dto.ChatConnectionDto;
 import com.example.ticketing.chat.dto.ChatMessageDto;
-import com.example.ticketing.common.UUIDGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.yaml.snakeyaml.emitter.Emitter;
 
 import java.io.IOException;
 import java.util.List;
